@@ -1,0 +1,48 @@
+version: "1.0"
+
+services:
+
+  postgres:
+    image: postgres:13-alpine
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_db:/var/lib/postgresql/data
+  
+  flyway:
+    image: flyway/flyway:8.5.13-alpine
+    command: -locations=filesystem:/flyway/sql migrate
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/dockerdb
+      FLYWAY_USER: dockeruser
+      FLYWAY_PASSWORD: dockerpassword
+    volumes:
+      - ./MilitaryAirBaseManagementSystem/src/main/resources/db.migration:/flyway/sql
+    depends_on:
+      - postgres
+  
+  app_1:
+    build: ./MilitaryAirBaseManagementSystem
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+      - flyway
+
+  mongo:
+    image: mongo:5.0.2
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_db:/data/db
+
+  app_2:
+    build: ./AircraftOrdnanceManagementSystem
+    ports:
+      - "8082:8080"
+    depends_on:
+      - mongo
+
+volumes:
+  postgres_db:
+  mongo_db:
